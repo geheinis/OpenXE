@@ -209,6 +209,8 @@ class Fibu_buchungen {
                     '</a>'
                 );                           
 
+                $check_sql = "(fo.info <> '' AND salden.saldonum = -SUM(fbd.betrag))";
+
                 $auswahl = array (
                     '<input type=\"text\" name=\"ids[]\" value=\"',
                     ['sql' => 'salden.typ'],
@@ -220,7 +222,7 @@ class Fibu_buchungen {
                     '_',
                     ['sql' => 'salden.id'],
                     '"',
-                    ['sql' => "if(fo.info <> '','checked','')"],
+                    ['sql' => "if(".$check_sql.",'checked','')"],
                     ' />'
                 );              
 
@@ -277,7 +279,9 @@ class Fibu_buchungen {
                             wert,
                             vorschlag,
                             doc,
-                            doc_id
+                            doc_id,
+                            doc_saldo,
+                            checked
                         FROM
                             (
                             SELECT
@@ -297,7 +301,8 @@ class Fibu_buchungen {
                                 fo.id AS doc_id,
                                 fo.info AS doc_info,
                                 SUM(fbd.betrag) as doc_saldo,
-                                ".$this->app->erp->ConcatSQL($doc)." AS doc
+                                if(".$check_sql.",'1','0') AS checked,
+                                ".$this->app->erp->ConcatSQL($doc)." AS doc                              
                             FROM
                                 (
                                 SELECT
@@ -353,6 +358,7 @@ class Fibu_buchungen {
 
                 // Toggle filters 
                 $this->app->Tpl->Add('JQUERYREADY', "$('#vorschlagfilter').click( function() { fnFilterColumn1( 0 ); } );");
+                $this->app->Tpl->Add('JQUERYREADY', "$('#checkedfilter').click( function() { fnFilterColumn2( 0 ); } );");
 
                 for ($r = 1;$r <= 4;$r++) {
                   $this->app->Tpl->Add('JAVASCRIPT', '
@@ -378,11 +384,21 @@ class Fibu_buchungen {
                    $where .= " AND doc_id IS NOT NULL"; 
                 } else {
                 }          
+
+                $more_data2 = $this->app->Secure->GetGET("more_data2");
+                if ($more_data2 == 1) {
+                   $where .= " AND checked = 1"; 
+                } else {
+                }                        
+
                 // END Toggle filters
 
 
 //                $count = "SELECT count(DISTINCT id) FROM fibu_buchungen_alle WHERE $where";
                 $groupby = "GROUP BY typ, id";
+
+//echo($sql." WHERE ".$where." ".$groupby);
+
 
             break;                  
         }
